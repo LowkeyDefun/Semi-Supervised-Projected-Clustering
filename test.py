@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from SSPC import SSPC
+from utils import ari
 
 
 class TestWithMockData(unittest.TestCase):
@@ -12,19 +13,23 @@ class TestWithMockData(unittest.TestCase):
         Set up mock data.
         """
         self.sspc = SSPC(k=3)
-        self.data = [[11,  1.5,  1.0,  900],    # cluster 0
-                     [10,  -1.5, 1.2,  902],    # cluster 0
-                     [-10, -1.1, 2.3,  -1002],  # cluster 1
-                     [-9,  -0.9, 0.1,  -987],   # cluster 1
-                     [9,   2.3,  0.99, 899],    # cluster 0
-                     [0,   0,    0,    789],    # cluster 2
-                     [1,   0.2,  -0.1, 456],    # cluster 2
-                     [-9,  -1.0, -2.3, -999],   # cluster 1
-                     [0,   -0.1, 0.1,  -345]]   # cluster 2
+        self.data = np.array([[11,  1.5,  1.0,  900],   # cluster 0
+                             [10,  -1.5, 1.2,  902],    # cluster 0
+                             [-10, -1.1, 2.3,  -1002],  # cluster 1
+                             [-9,  -0.9, 0.1,  -987],   # cluster 1
+                             [9,   2.3,  0.99, 899],    # cluster 0
+                             [0,   0,    0,    789],    # cluster 2
+                             [1,   0.2,  -0.1, 456],    # cluster 2
+                             [-9,  -1.0, -2.3, -999],   # cluster 1
+                             [0,   -0.1, 0.1,  -345]])  # cluster 2
         self.labeled_objects = [[0], [2], [5]]
         self.labeled_dimensions = [[0], [0], [0]]
         self.clusters = [[0, 1, 4], [2, 3, 7], [5, 6, 8]]
+        self.cluster_list = [0, 0, 1, 1, 0, 2, 2, 1, 2]
         self.selected_dims = [[0, 2, 3], [0, 1, 3], [0, 1, 2]]
+        self.reps = []
+        for i in range(len(self.clusters)):
+            self.reps.append([np.median(self.data[self.clusters[i]][:, j]) for j in range(self.data.shape[1])])
 
     def test_initialize(self):
         """
@@ -46,18 +51,12 @@ class TestWithMockData(unittest.TestCase):
                                         labeled_objects=self.labeled_objects,
                                         labeled_dimensions=self.labeled_dimensions)
         clusters, selected_dims = res['clusters'], res['selected dimensions']
-        print(clusters)
-        print(selected_dims)
         cluster_list = np.zeros(len(self.data))
         for cluster_i in range(len(clusters)):
             for i in clusters[cluster_i]:
                 cluster_list[i] = cluster_i
-        print(cluster_list)
-
-        # Test clustering and selected dimensions.
-        for i in range(len(clusters)):
-            self.assertEqual(clusters[i], self.clusters[i])
-            self.assertEqual(selected_dims[i], self.selected_dims[i])
+        ari_res = ari(cluster_list, self.cluster_list)
+        self.assertGreater(ari_res, 0.5)
 
 
 if __name__ == '__main__':

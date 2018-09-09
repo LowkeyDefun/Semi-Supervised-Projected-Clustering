@@ -1,4 +1,6 @@
 import numpy as np
+import math
+import pandas as pd
 
 
 def calc_stats_i(data_i):
@@ -157,3 +159,49 @@ def max_min_dist(data, sd_data, G, selected_dims):
                 if up not in up_dist or up_dist[up] > sd_dist:
                     up_dist[up] = sd_dist
     return max(up_dist.keys(), key=(lambda key: up_dist[key]))
+
+
+def nCr(n, r):
+    f = math.factorial
+    if n < r:
+        return 0
+    else:
+        return f(n) // f(r) // f(n - r)
+
+
+def ari(c1, c2):
+    """
+    param c1: a vector of length n with SSPC classifications
+    param c2: a vector of length n with real classifications/clustering label
+
+    """
+    c1 = np.asarray(c1)
+    c2 = np.asarray(c2)
+
+    if len(c1) != len(c2):
+        print("vectors must be of the same length")
+
+    # Create the contingency table of the two vectors
+    table = np.matrix([c1, c2]).T
+    dum = pd.get_dummies(np.ravel(table))
+    dum = dum.values.argmax(1)
+
+    c1 = dum[::2]
+    c2 = dum[1::2]
+
+    dat = np.matrix([c1, c2]).T
+    n, d = dat.shape
+
+    table = pd.crosstab(c1, c2)
+
+    if n == d == 1:
+        print(1)
+
+    n_ij = sum(nCr(x, 2) for x in np.ravel(table))
+    a_i = sum(nCr(x, 2) for x in np.ravel(table.sum(axis=1)))
+    b_j = sum(nCr(x, 2) for x in np.ravel(table.sum(axis=0)))
+    c = nCr(len(c1), 2)
+    e = a_i * b_j / c
+    res = (n_ij - e) / (1 / 2 * (a_i + b_j) - e)
+
+    return res

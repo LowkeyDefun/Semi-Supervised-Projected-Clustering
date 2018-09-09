@@ -8,7 +8,7 @@ class SSPC(object):
     Semi-Supervised Projected Clustering algorithm.
     """
 
-    def __init__(self, k, m=0.5, building_dim_num=3, max_drop_len=3, grid_size=1.0, climb_step_size=0.1):
+    def __init__(self, k, m=0.7, building_dim_num=3, max_drop_len=3, grid_size=1.0, climb_step_size=0.1):
         """
         :param k: number of clusters
         :param m: threshold coefficient, m varies between (0,1)
@@ -28,9 +28,9 @@ class SSPC(object):
         self.labeled_dimensions = None
         self.seed_groups = None
         self.selected_dims = None
-        self.medoid_bank = None
-        self.medoids_used = None
-        self.reps = None
+        self.medoid_bank = None  # all the medoids which will be drawn from the seed groups
+        self.medoids_used = None  # the medoids which are used as clusters' reps
+        self.reps = None  # cluster reps which can either be real data point or virtual position
         self.clusters = None
 
     def fit_and_predict(self, data, labeled_objects=None, labeled_dimensions=None):
@@ -38,13 +38,8 @@ class SSPC(object):
         data = self.data
         self.labeled_objects = labeled_objects
         self.labeled_dimensions = labeled_dimensions
-        print("selection threshold: ", self.selection_threshold)
         self._initialize()
         self._draw_medoids()
-        print("reps: ", self.reps)
-        print("medoids: ", self.medoids_used)
-        print("seed groups: ", self.medoid_bank)
-        print("selected dimension:", self.selected_dims)
 
         # best score so far
         best_phi = None
@@ -71,9 +66,6 @@ class SSPC(object):
                 self.clusters = clusters
                 self.selected_dims = selected_dims
                 drop_length = 0
-                print("clusters: ", clusters)
-                print("selected dimensions: ", selected_dims)
-                print("phi i: ", phi_i)
             else:
                 drop_length += 1
 
@@ -238,12 +230,12 @@ class SSPC(object):
         reps = []
         seed_groups = self.seed_groups
         medoids = {}
-        medoids_used = []
+        medoids_used = {}
         for k in range(len(seed_groups)):
             number_to_choose = len(seed_groups[k])
             medoids.update({k: random.sample(seed_groups[k], number_to_choose)})
             reps.append(self.data[medoids[k][0]])
-            medoids_used.append(medoids[k][0])
+            medoids_used.update({k: medoids[k][0]})
         self.medoid_bank = medoids
         self.reps = reps
         self.medoids_used = medoids_used
@@ -277,7 +269,7 @@ class SSPC(object):
         for med_cluster in med_clusters:
             for i in range(len(medoids[med_cluster])):
                 new_medoid = medoids[med_cluster][i]
-                if new_medoid not in medoids_used:
+                if new_medoid not in medoids_used.values():
                     reps[med_cluster] = data[new_medoid]
 
                     # Replace the front of the medoid bank by the new medoid.
@@ -286,7 +278,7 @@ class SSPC(object):
                         medoids[med_cluster] = [new_medoid]
                     else:
                         medoids[med_cluster][0] = new_medoid
-                    self.medoids_used = [new_medoid]
+                    self.medoids_used = {med_cluster: new_medoid}
                     break
 
         # Replace all other cluster reps by current medians.
@@ -318,29 +310,29 @@ class SSPC(object):
 
     def _score_function_i(self, data_i, selected_dims, medoid_used):
         """
-        Calculate the score component of each cluster: sum of score component phi_ij over set of selected dimensions.
+        Calculate the score components of cluster i: list of score component phi_ij over set of selected dimensions.
         :param data_i: cluster i
         :param selected_dims: selected dimensions for this cluster
         :param medoid_used: medoid of the labelled objects clusters.
         """
-        phi_ij = []
+        phi_ij_list = []
         selection_threshold = self.selection_threshold
 
         # Calculate the score of each dimension in data_k
         for j in selected_dims:
             medoid_used_j = medoid_used[j]
-            phi_ij.append(self.score_function_ij(data_i[:, j], medoid_used_j, selection_threshold[j]))
-        return phi_ij
+            phi_ij_list.append(self.score_function_ij(data_i[:, j], medoid_used_j, selection_threshold[j]))
+        return phi_ij_list
 
     def _score_function_all(self, clusters, selected_dims, medoids_used):
         data = self.data
-        phi_i = []
+        phi_i_list = []
         for i in range(len(clusters)):
             cluster = clusters[i]
             medoid_used = medoids_used[i]
             selected_dim = selected_dims[i]
-            phi_i.append(sum(self._score_function_i(data[cluster], selected_dim, medoid_used)))
-        return phi_i
+            phi_i_list.append(sum(self._score_function_i(data[cluster], selected_dim, medoid_used)))
+        return phi_i_list
 
     def _assign_max(self):
         """
@@ -351,11 +343,9 @@ class SSPC(object):
         k = self.k
         selected_dimensions = self.selected_dims
 
-        # a list of assigned clusters for each individual data
-        cluster_assigned = []
-
         # a list of relevant phi_i scores for assigned clusters
         clusters = []
+        data_clusters = []
 
         # list for currently used reps
         reps = self.reps
@@ -363,18 +353,25 @@ class SSPC(object):
         # Initialize clusters assigned.
         for i in range(k):
             clusters.append([])
+            data_clusters.append([reps[i]])
 
         # For each new data input, calculate the new score_i for every cluster and assign the maximum
         for n_i in range(len(data)):
             new_dat_point = data[n_i]
+
+            # Skip the data points which have been used as medoids.
+            if n_i in self.medoids_used.values():
+                for key, v in self.medoids_used.items():
+                    if v == n_i:
+                        clusters[key].append(n_i)
+                continue
             phi_i = []
 
             for i in range(k):
-                cluster = clusters[i]
                 rep = reps[i]
 
                 # current available data in i-th cluster
-                data_i = data[cluster].copy()
+                data_i = data_clusters[i].copy()
                 data_i = np.append(data_i, [new_dat_point], axis=0)
 
                 # Calculate the score_ij.
@@ -382,6 +379,6 @@ class SSPC(object):
                 phi_i.append(sum(phi_ij))
 
             # Add the point to a cluster which maximizes phi_i.
-            cluster_assigned.append(phi_i.index(max(phi_i)))
-            clusters[cluster_assigned[n_i]].append(n_i)
+            cluster_i = phi_i.index(max(phi_i))
+            clusters[cluster_i].append(n_i)
         return clusters
