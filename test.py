@@ -48,6 +48,11 @@ class TestWithMockData(unittest.TestCase):
         clusters, selected_dims = res['clusters'], res['selected dimensions']
         print(clusters)
         print(selected_dims)
+        cluster_list = np.zeros(len(self.data))
+        for cluster_i in range(len(clusters)):
+            for i in clusters[cluster_i]:
+                cluster_list[i] = cluster_i
+        print(cluster_list)
 
         # Test clustering and selected dimensions.
         for i in range(len(clusters)):
