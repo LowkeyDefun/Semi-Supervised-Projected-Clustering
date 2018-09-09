@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
-from SSPC import SSPC
-from utils import ari
+from SSPC import SSPC, ari
 
 
 class TestWithMockData(unittest.TestCase):
