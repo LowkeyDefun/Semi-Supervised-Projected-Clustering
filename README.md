@@ -3,6 +3,8 @@ Semi-Supervised Projected Clustering according to 'On Discovery of Extremely Low
 
 Dataset used: https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008
 
+Forina, M., Lanteri, S. Armanino, C., Casolino, C., Casale, M., Oliveri, P. (2008). V-PARVUS. An Extendible Package of programs for explorative data analysis, classification and regression analysis. Dip. Chimica e Tecnologie Farmaceutiche ed Alimentari, Università di Genova. Freely available at http://www.parvus.unige.it.
+
 # Overview
 SSPC algorithm aims to apply projected clustering with semi-supervised heuristics onto high-dimensional clustering data, to improve on current unsupervised clustering algorithms.
 
