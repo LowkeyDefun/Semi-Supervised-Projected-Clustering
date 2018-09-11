@@ -575,7 +575,7 @@ class SSPC(object):
                 rep = reps[i]
 
                 # current available data in i-th cluster
-                data_i = data_clusters[i].copy()
+                data_i = list(data_clusters[i])
                 data_i = np.append(data_i, [new_dat_point], axis=0)
 
                 # Calculate the score_ij.
