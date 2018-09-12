@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import csv
 from SSPC import SSPC, ari
 
 
@@ -57,6 +58,41 @@ class TestWithMockData(unittest.TestCase):
         ari_res = ari(cluster_list, self.cluster_list)
         self.assertGreater(ari_res, 0.5)
 
+        
+class TestWithIris(unittest.TestCase):
+    """
+    Use Iris data to test SSPC.
+    """
+    def setUp(self):
+        """
+        Read Iris data.
+        """
+        self.sspc = SSPC(k=3)
+        data = []
+        labels = []
+        with open('Datasets/dataset_iris/iris.data') as csvfile:
+            csvreader = csv.reader(csvfile, delimiter=',')
+            for row in csvreader:
+                if len(row) > 0:
+                    data.append([float(i) for i in row[:-1]])
+                if len(row) > 1:
+                    labels.append(row[-1])
+        self.data = data
+        self.labeled_objects = [[0], [50], [100]]
+        self.labeled_dimensions = []
+        self.cluster_list = [i // 50 for i in range(150)]
+    
+    def test_fit_and_predict(self):
+        res = self.sspc.fit_and_predict(self.data,
+                                        labeled_objects=self.labeled_objects,
+                                        labeled_dimensions=self.labeled_dimensions)
+        clusters, selected_dims = res['clusters'], res['selected dimensions']
+        cluster_list = np.zeros(len(self.data))
+        for cluster_i in range(len(clusters)):
+            for i in clusters[cluster_i]:
+                cluster_list[i] = cluster_i
+        ari_res = ari(cluster_list, self.cluster_list)
+        self.assertGreater(ari_res, 0.5)
 
 if __name__ == '__main__':
     unittest.main()

@@ -349,7 +349,8 @@ class SSPC(object):
                                  for i in range(len(score_ij))])
         score_ij /= sum(score_ij)
         building_dims = np.random.choice(a=candidate_set, size=building_dim_num, replace=False, p=score_ij)
-
+        building_dims = [int(i) for i in building_dims]
+        
         # Extract the data with building dimensions.
         data_grid = data[:, building_dims]
         sd_grid = np.std(data_grid, axis=0)
@@ -521,9 +522,10 @@ class SSPC(object):
         """
         phi_ij_list = []
         selection_threshold = self.selection_threshold
-
+        
         # Calculate the score of each dimension in data_k
-        for j in selected_dims:
+        for selected_dim in selected_dims:
+            j = int(selected_dim)
             medoid_used_j = medoid_used[j]
             phi_ij_list.append(self.score_function_ij(data_i[:, j], medoid_used_j, selection_threshold[j]))
         return phi_ij_list
