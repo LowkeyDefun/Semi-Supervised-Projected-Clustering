@@ -3,7 +3,7 @@ Semi-Supervised Projected Clustering according to 'On Discovery of Extremely Low
 
 Dataset used: 
 
-- https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008
+- Iris data set https://archive.ics.uci.edu/ml/datasets/iris
 
 - Forina, M., Lanteri, S. Armanino, C., Casolino, C., Casale, M., Oliveri, P. (2008). V-PARVUS. An Extendible Package of programs for explorative data analysis, classification and regression analysis. Dip. Chimica e Tecnologie Farmaceutiche ed Alimentari, Università di Genova. Freely available at http://www.parvus.unige.it.
 
@@ -79,3 +79,6 @@ initialize -> draw_medoids -> loop till convergence {
 where c = convergence length
 
 Our implementation does not meet the complexity expectation from the original paper, so we will be looking for ways of improvement.
+
+# Tests
+We test our implementation with one set of mock-up data and Iris data set, making sure ARI >= 0.5.
